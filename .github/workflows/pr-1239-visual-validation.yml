@@ -1,0 +1,79 @@
+name: PR 1239 visual validation
+
+on:
+  push:
+    branches: [validation/pr-1239-sound]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: pr-1239-visual-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  notification-sound:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          ref: 6fc06768aa90dcdb6a9dff42427673a608cde2f7
+
+      - uses: pnpm/action-setup@v6
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: pnpm
+
+      - name: Install virtual display and CJK fonts
+        run: |
+          sudo apt-get update
+          sudo apt-get install --no-install-recommends --yes xauth xvfb fonts-noto-cjk
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Electron
+        run: node apps/desktop/node_modules/electron/install.js
+
+      - name: Configure Chromium sandbox
+        run: |
+          sandbox=apps/desktop/node_modules/electron/dist/chrome-sandbox
+          sudo chown root:root "$sandbox"
+          sudo chmod 4755 "$sandbox"
+
+      - name: Build dependency packages and Desktop
+        run: |
+          pnpm --filter '@pi-desktop/desktop^...' build
+          pnpm --filter @pi-desktop/desktop build
+
+      - name: Typecheck and related unit tests
+        run: |
+          pnpm --filter @pi-desktop/desktop typecheck
+          node --test apps/desktop/test/notification*.test.mjs apps/desktop/test/plugin-execute-notification.test.mjs apps/desktop/test/settings-general.test.mjs
+
+      - name: Exercise sound settings and capture production UI
+        env:
+          PI_SOUND_EVIDENCE_DIR: artifacts/pr-1239
+        run: |
+          set -o pipefail
+          mkdir -p artifacts/pr-1239
+          xvfb-run --auto-servernum node scripts/e2e-notification-sound.mjs 2>&1 | tee artifacts/pr-1239/e2e.log
+
+      - name: Record candidate identity
+        if: always()
+        run: |
+          mkdir -p artifacts/pr-1239
+          git rev-parse HEAD > artifacts/pr-1239/candidate.txt
+          git show --no-patch --format='%H %s' 589e5803a7a9f4ebf7ec1e8849c43e44b4a198f7 >> artifacts/pr-1239/candidate.txt
+
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: pr-1239-visual-evidence
+          path: artifacts/pr-1239
+          if-no-files-found: error
+          retention-days: 14
