@@ -115,7 +115,12 @@ window.notificationSoundProbe = async (phase) => {
   await upload(new File([wav()], "completion.wav", { type: "audio/wav" }));
   await until(() => !control().querySelector('[role="status"]') && control().getAttribute("aria-busy") === "false", "Successful retry must clear the error");
   i18n.addResourceBundle("zh-CN", "translation", flattenCatalog(catalogs["zh-CN"]));
+  saved = { ...saved, language: "zh-CN" };
+  localStorage.setItem(storageKey, JSON.stringify(saved));
+  flushSync(() => useAppStore.setState({ settings: saved }));
   await i18n.changeLanguage("zh-CN");
+  document.documentElement.lang = "zh-CN";
+  document.documentElement.dataset.theme = saved.theme;
   control().scrollIntoView({ block: "center" });
   await frame(); await frame();
   const row = control().closest(".settings-row").getBoundingClientRect();
