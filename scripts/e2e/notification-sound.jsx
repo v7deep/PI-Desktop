@@ -24,6 +24,7 @@ window.piDesktop.invoke = async (channel, input) => {
   }
   return originalInvoke(channel, input);
 };
+document.documentElement.dataset.theme = saved.theme;
 setNotificationSoundSettings(saved.notificationSound);
 flushSync(() => useAppStore.setState({ settings: saved, settingsTab: "general" }));
 
@@ -122,6 +123,10 @@ window.notificationSoundProbe = async (phase) => {
   document.documentElement.lang = "zh-CN";
   document.documentElement.dataset.theme = saved.theme;
   control().scrollIntoView({ block: "center" });
+  await document.fonts.ready;
+  await Promise.all(document.getAnimations()
+    .filter((animation) => animation.effect?.getTiming().iterations !== Infinity)
+    .map((animation) => animation.finished));
   await frame(); await frame();
   const row = control().closest(".settings-row").getBoundingClientRect();
   return {
