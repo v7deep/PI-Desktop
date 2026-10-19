@@ -5455,7 +5455,16 @@ must keep splitting are covered by `markdown-blocks.test.mjs`.
 - **Specs linked**: `03-runtime/01-ipc-protocol.md`,
   `03-runtime/17-asktool-questions.md`, `04-ux/06-settings-ia.md`
 - **Acceptance**: C (notification feedback), Accessibility
-- **Status**: Unit/source-contract covered; audible desktop check Draft
+- **Coverage**: `node scripts/e2e-notification-sound.mjs` mounts the production
+  Settings page, store, controls and CSS in sandboxed Electron. It exercises
+  custom WAV selection, browser playback, mode switching, invalid/oversized
+  files, save failure/retry and restoration across two Electron processes.
+  Only the preload boundary is mocked; fixture settings persist in Chromium
+  localStorage, so this does not validate Host database persistence or native
+  notification delivery. Set `PI_SOUND_EVIDENCE_DIR` to capture the full
+  settings surface and notification-sound row.
+- **Status**: Unit/source-contract and isolated Electron settings-path covered;
+  full Host/native notification journey and audible desktop check Draft
 
 #### E2E-066: Provider model catalog survives restart and offline refresh
 
